@@ -4,6 +4,8 @@
 #include "esphome/components/output/float_output.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
+#include <bitset>
+#include <set>
 
 #ifdef USE_ESP32
 #include "driver/ledc.h"
@@ -15,7 +17,7 @@
 namespace esphome {
 namespace mcpwm_unified {
 
-static const char *const TAG = "mcpwm_unified";
+extern const char *const TAG;
 
 enum class DriverType {
   AUTO,

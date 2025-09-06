@@ -1,13 +1,15 @@
 #include "mcpwm_unified.h"
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
+#include <bitset>
+#include <set>
 
 #ifdef USE_ESP32
 
 namespace esphome {
 namespace mcpwm_unified {
 
-static const char *const TAG = "mcpwm_unified";
+const char *const TAG = "mcpwm_unified";
 
 // Static resource tracking initialization
 std::bitset<8> McpwmUnifiedOutput::ledc_channels_used_;
@@ -204,8 +206,8 @@ bool McpwmUnifiedOutput::setup_mcpwm() {
     .frequency = static_cast<uint32_t>(this->frequency_),
     .cmpr_a = 0,
     .cmpr_b = 0,
-    .counter_mode = MCPWM_UP_COUNTER,
     .duty_mode = MCPWM_DUTY_MODE_0,
+    .counter_mode = MCPWM_UP_COUNTER,
   };
   
   err = mcpwm_init(this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_, &pwm_config);
