@@ -1,0 +1,19 @@
+esphome:
+  name: ledc-baseline-test
+  friendly_name: "LEDC Baseline Test"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Test standard LEDC output to ensure our setup is correct
+output:
+  - platform: ledc
+    id: test_ledc
+    pin: GPIO1
+    frequency: 50000Hz

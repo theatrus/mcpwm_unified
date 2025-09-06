@@ -1,0 +1,52 @@
+esphome:
+  name: mcpwm-basic-test
+  friendly_name: "MCPWM Basic Test"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# External components
+external_components:
+  - source: my_components
+    components: [ mcpwm_unified ]
+
+# Test basic functionality with a few channels
+output:
+  # Test automatic driver selection (should use LEDC first)
+  - platform: mcpwm_unified
+    id: pwm_1
+    pin: GPIO1
+    frequency: 50000Hz
+    
+  - platform: mcpwm_unified
+    id: pwm_2
+    pin: GPIO2
+    frequency: 50000Hz
+    
+  - platform: mcpwm_unified
+    id: pwm_3
+    pin: GPIO13
+    frequency: 50000Hz
+
+# Test lights using PWM outputs
+light:
+  - platform: monochromatic
+    id: light_1
+    output: pwm_1
+    name: "PWM Light 1"
+    
+  - platform: monochromatic
+    id: light_2
+    output: pwm_2
+    name: "PWM Light 2"
+    
+  - platform: monochromatic
+    id: light_3
+    output: pwm_3
+    name: "PWM Light 3"

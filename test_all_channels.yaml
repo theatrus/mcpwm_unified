@@ -1,0 +1,190 @@
+esphome:
+  name: mcpwm-all-channels
+  friendly_name: "MCPWM All Channels Test"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# External components
+external_components:
+  - source: my_components
+    components: [ mcpwm_unified ]
+
+# Test all 20 channels (8 LEDC + 12 MCPWM) based on original ESP-IDF code
+output:
+  # LEDC channels (should be allocated first) - matching original GPIO pins
+  - platform: mcpwm_unified
+    id: ledc_13
+    pin: GPIO13
+    frequency: 50000Hz
+    driver: auto  # Should use LEDC
+    
+  - platform: mcpwm_unified
+    id: ledc_14
+    pin: GPIO14
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: ledc_15
+    pin: GPIO15
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: ledc_16
+    pin: GPIO16
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: ledc_17
+    pin: GPIO17
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: ledc_18
+    pin: GPIO18
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: ledc_19
+    pin: GPIO19
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: ledc_21
+    pin: GPIO21
+    frequency: 50000Hz
+    driver: auto
+
+  # MCPWM channels - matching original GPIO pins (1-12)
+  - platform: mcpwm_unified
+    id: mcpwm_1
+    pin: GPIO1
+    frequency: 50000Hz
+    driver: auto  # Should fallback to MCPWM
+    
+  - platform: mcpwm_unified
+    id: mcpwm_2
+    pin: GPIO2
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_3
+    pin: GPIO3
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_4
+    pin: GPIO4
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_5
+    pin: GPIO5
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_6
+    pin: GPIO6
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_7
+    pin: GPIO7
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_8
+    pin: GPIO8
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_9
+    pin: GPIO9
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_10
+    pin: GPIO10
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_11
+    pin: GPIO11
+    frequency: 50000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: mcpwm_12
+    pin: GPIO12
+    frequency: 50000Hz
+    driver: auto
+
+# Create lights to test the outputs with different duty cycles
+light:
+  # LEDC lights with various brightness levels (matching original duty values)
+  - platform: monochromatic
+    id: light_13
+    output: ledc_13
+    name: "LEDC 13 (12.5%)"  # 128/1024 ≈ 12.5%
+    
+  - platform: monochromatic
+    id: light_14
+    output: ledc_14
+    name: "LEDC 14 (25%)"     # 256/1024 = 25%
+    
+  - platform: monochromatic
+    id: light_15
+    output: ledc_15
+    name: "LEDC 15 (50%)"     # 512/1024 = 50%
+    
+  - platform: monochromatic
+    id: light_16
+    output: ledc_16
+    name: "LEDC 16 (75%)"     # 768/1024 = 75%
+
+  # MCPWM lights with duty cycles matching original code
+  - platform: monochromatic
+    id: light_1
+    output: mcpwm_1
+    name: "MCPWM 1 (10%)"
+    
+  - platform: monochromatic
+    id: light_2
+    output: mcpwm_2
+    name: "MCPWM 2 (12%)"
+    
+  - platform: monochromatic
+    id: light_3
+    output: mcpwm_3
+    name: "MCPWM 3 (14%)"
+    
+  - platform: monochromatic
+    id: light_7
+    output: mcpwm_7
+    name: "MCPWM 7 (50%)"
+    
+  - platform: monochromatic
+    id: light_12
+    output: mcpwm_12
+    name: "MCPWM 12 (75%)"

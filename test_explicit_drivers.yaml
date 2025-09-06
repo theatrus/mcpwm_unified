@@ -1,0 +1,97 @@
+esphome:
+  name: mcpwm-explicit-test
+  friendly_name: "MCPWM Explicit Driver Test"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# External components
+external_components:
+  - source: my_components
+    components: [ mcpwm_unified ]
+
+# Test explicit driver selection
+output:
+  # Force LEDC driver
+  - platform: mcpwm_unified
+    id: force_ledc_1
+    pin: GPIO13
+    frequency: 50000Hz
+    driver: ledc
+    channel: 0
+    
+  - platform: mcpwm_unified
+    id: force_ledc_2
+    pin: GPIO14
+    frequency: 25000Hz
+    driver: ledc
+    channel: 1
+
+  # Force MCPWM driver with specific configuration
+  - platform: mcpwm_unified
+    id: force_mcpwm_1
+    pin: GPIO1
+    frequency: 50000Hz
+    driver: mcpwm
+    mcpwm_unit: 0
+    mcpwm_timer: 0
+    mcpwm_operator: A
+    
+  - platform: mcpwm_unified
+    id: force_mcpwm_2
+    pin: GPIO2
+    frequency: 50000Hz
+    driver: mcpwm
+    mcpwm_unit: 0
+    mcpwm_timer: 0
+    mcpwm_operator: B
+    
+  - platform: mcpwm_unified
+    id: force_mcpwm_3
+    pin: GPIO3
+    frequency: 50000Hz
+    driver: mcpwm
+    mcpwm_unit: 0
+    mcpwm_timer: 1
+    mcpwm_operator: A
+
+# Test different frequencies
+  - platform: mcpwm_unified
+    id: freq_test_1
+    pin: GPIO15
+    frequency: 1000Hz
+    driver: auto
+    
+  - platform: mcpwm_unified
+    id: freq_test_2  
+    pin: GPIO16
+    frequency: 100000Hz
+    driver: auto
+
+# Create lights for testing
+light:
+  - platform: monochromatic
+    id: ledc_light_1
+    output: force_ledc_1
+    name: "Forced LEDC 1"
+    
+  - platform: monochromatic
+    id: mcpwm_light_1
+    output: force_mcpwm_1
+    name: "Forced MCPWM 1"
+    
+  - platform: monochromatic
+    id: freq_light_1
+    output: freq_test_1
+    name: "1kHz Test"
+    
+  - platform: monochromatic
+    id: freq_light_2
+    output: freq_test_2
+    name: "100kHz Test"
