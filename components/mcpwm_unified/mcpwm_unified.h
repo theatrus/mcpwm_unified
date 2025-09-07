@@ -79,8 +79,8 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   
   bool allocate_ledc_channel();
   bool allocate_mcpwm_channel();
-  bool setup_ledc();
-  bool setup_mcpwm();
+  bool setup_ledc(std::string &failure_reason);
+  bool setup_mcpwm(std::string &failure_reason);
   void write_ledc_state(float state);
   void write_mcpwm_state(float state);
   uint32_t frequency_to_ledc_resolution(float freq);

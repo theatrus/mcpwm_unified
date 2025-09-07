@@ -105,25 +105,27 @@ void McpwmUnifiedOutput::setup() {
   if (this->allocated_driver_ == AllocatedDriver::LEDC) {
     ESP_LOGD(TAG, "Setting up LEDC driver (Channel %d, Timer %d, Frequency %.1f Hz)", 
              this->allocated_channel_, this->ledc_timer_, this->frequency_);
-    if (!this->setup_ledc()) {
+    std::string ledc_failure_reason;
+    if (!this->setup_ledc(ledc_failure_reason)) {
       ESP_LOGE(TAG, "Failed to setup LEDC for GPIO %d", pin_num);
       ESP_LOGE(TAG, "Debug: LEDC Channel %d, Timer %d, Frequency %.1f Hz", 
                this->allocated_channel_, this->ledc_timer_, this->frequency_);
       ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not PWM capable, hardware conflict");
-      this->set_error_and_fail("LEDC setup failed for GPIO " + std::to_string(pin_num));
+      this->set_error_and_fail("LEDC setup failed for GPIO " + std::to_string(pin_num) + ": " + ledc_failure_reason);
       return;
     }
   } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
     ESP_LOGD(TAG, "Setting up MCPWM driver (Unit %d, Timer %d, Operator %s, Frequency %.1f Hz)", 
              this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_, 
              this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B", this->frequency_);
-    if (!this->setup_mcpwm()) {
+    std::string mcpwm_failure_reason;
+    if (!this->setup_mcpwm(mcpwm_failure_reason)) {
       ESP_LOGE(TAG, "Failed to setup MCPWM for GPIO %d", pin_num);
       ESP_LOGE(TAG, "Debug: Unit %d, Timer %d, Operator %s, Frequency %.1f Hz", 
                this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_,
                this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B", this->frequency_);
       ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not MCPWM capable, timer conflict");
-      this->set_error_and_fail("MCPWM setup failed for GPIO " + std::to_string(pin_num));
+      this->set_error_and_fail("MCPWM setup failed for GPIO " + std::to_string(pin_num) + ": " + mcpwm_failure_reason);
       return;
     }
   }
@@ -191,7 +193,7 @@ bool McpwmUnifiedOutput::allocate_mcpwm_channel() {
   return false;
 }
 
-bool McpwmUnifiedOutput::setup_ledc() {
+bool McpwmUnifiedOutput::setup_ledc(std::string &failure_reason) {
   // Calculate optimal resolution for frequency
   uint32_t resolution = this->frequency_to_ledc_resolution(this->frequency_);
   
@@ -207,6 +209,7 @@ bool McpwmUnifiedOutput::setup_ledc() {
   esp_err_t err = ledc_timer_config(&ledc_timer);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "LEDC timer config failed: %s", esp_err_to_name(err));
+    failure_reason = std::string("LEDC timer config failed: ") + esp_err_to_name(err);
     return false;
   }
 
@@ -224,13 +227,14 @@ bool McpwmUnifiedOutput::setup_ledc() {
   err = ledc_channel_config(&ledc_channel);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "LEDC channel config failed: %s", esp_err_to_name(err));
+    failure_reason = std::string("LEDC channel config failed: ") + esp_err_to_name(err);
     return false;
   }
 
   return true;
 }
 
-bool McpwmUnifiedOutput::setup_mcpwm() {
+bool McpwmUnifiedOutput::setup_mcpwm(std::string &failure_reason) {
   // Initialize MCPWM GPIO
   mcpwm_io_signals_t io_signal;
   if (this->allocated_mcpwm_operator_ == MCPWM_OPR_A) {
@@ -244,6 +248,7 @@ bool McpwmUnifiedOutput::setup_mcpwm() {
   esp_err_t err = mcpwm_gpio_init(this->allocated_mcpwm_unit_, io_signal, this->pin_->get_pin());
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "MCPWM GPIO init failed: %s", esp_err_to_name(err));
+    failure_reason = std::string("MCPWM GPIO init failed: ") + esp_err_to_name(err);
     return false;
   }
 
@@ -259,6 +264,7 @@ bool McpwmUnifiedOutput::setup_mcpwm() {
   err = mcpwm_init(this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_, &pwm_config);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "MCPWM init failed: %s", esp_err_to_name(err));
+    failure_reason = std::string("MCPWM init failed: ") + esp_err_to_name(err);
     return false;
   }
 
