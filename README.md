@@ -1,5 +1,7 @@
 # ESPHome MCPWM Unified Component
 
+![ESPHome CI](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/workflows/ESPHome%20CI/badge.svg)
+
 A high-performance ESPHome component that provides unified PWM output functionality using both LEDC and MCPWM drivers on ESP32 platforms. This component automatically selects the optimal driver and manages resource allocation across multiple PWM channels.
 
 ## Features
@@ -122,6 +124,7 @@ output:
 | `mcpwm_unit` | int | 0 | MCPWM unit (0-1) for MCPWM driver |
 | `mcpwm_timer` | int | 0 | MCPWM timer (0-2) for MCPWM driver |
 | `mcpwm_operator` | string | "A" | MCPWM operator ("A" or "B") for MCPWM driver |
+| `inverted` | boolean | false | Invert PWM signal (0 input = 100% output) |
 
 ### Driver Selection
 
@@ -202,6 +205,36 @@ fan:
     name: "Motor Fan"
 ```
 
+### Inverted PWM Signal
+
+```yaml
+output:
+  # Normal PWM: 0% input = 0% output, 100% input = 100% output
+  - platform: mcpwm_unified
+    id: normal_pwm
+    pin: GPIO1
+    frequency: 50000Hz
+    inverted: false
+    
+  # Inverted PWM: 0% input = 100% output, 100% input = 0% output  
+  - platform: mcpwm_unified
+    id: inverted_pwm
+    pin: GPIO2
+    frequency: 50000Hz
+    inverted: true
+
+light:
+  - platform: monochromatic
+    id: normal_light
+    output: normal_pwm
+    name: "Normal Light"
+    
+  - platform: monochromatic
+    id: inverted_light
+    output: inverted_pwm
+    name: "Inverted Light"  # Brightness works oppositely
+```
+
 ## Performance Characteristics
 
 ### LEDC Driver
@@ -271,6 +304,32 @@ components/mcpwm_unified/
 └── mcpwm_unified.cpp    # C++ implementation with drivers
 ```
 
+## Development & Testing
+
+### Continuous Integration
+
+This component uses GitHub Actions for automated testing:
+
+- **Configuration Validation**: All test YAML files are validated on every push
+- **Compilation Testing**: Each configuration is compiled to ensure no build errors  
+- **Matrix Testing**: Tests run against multiple configuration scenarios:
+  - `test_minimal.yaml` - Basic single output
+  - `test_basic.yaml` - Multiple outputs with auto allocation
+  - `test_all_channels.yaml` - All 20 channels stress test
+  - `test_explicit_drivers.yaml` - Explicit driver selection
+  - `test_inverted.yaml` - Signal inversion testing
+  - `test_ledc_baseline.yaml` - LEDC comparison baseline
+
+### Running Tests Locally
+
+```bash
+# Validate configuration
+esphome config test_minimal.yaml
+
+# Compile (requires PlatformIO/ESP-IDF setup)
+esphome compile test_minimal.yaml
+```
+
 ## Contributing
 
 This component is based on the ESP-IDF MCPWM synchronization example and adapted for ESPHome. Contributions are welcome for:
@@ -279,6 +338,8 @@ This component is based on the ESP-IDF MCPWM synchronization example and adapted
 - Performance optimizations
 - Extended platform support
 - Bug fixes and improvements
+
+All contributions are automatically tested via GitHub Actions CI.
 
 ## License
 

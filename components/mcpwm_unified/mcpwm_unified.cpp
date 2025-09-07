@@ -39,6 +39,11 @@ void McpwmUnifiedOutput::setup() {
   uint8_t pin_num = this->pin_->get_pin();
   if (gpio_pins_used_.count(pin_num)) {
     ESP_LOGE(TAG, "GPIO %d already in use by another PWM output", pin_num);
+    ESP_LOGE(TAG, "Debug: Current GPIO usage:");
+    for (uint8_t used_pin : gpio_pins_used_) {
+      ESP_LOGE(TAG, "  GPIO %d: in use", used_pin);
+    }
+    ESP_LOGE(TAG, "Solution: Use a different GPIO pin or remove duplicate configuration");
     this->mark_failed();
     return;
   }
@@ -46,20 +51,38 @@ void McpwmUnifiedOutput::setup() {
   // Attempt allocation based on driver preference
   bool allocation_success = false;
   
+  ESP_LOGD(TAG, "Attempting channel allocation for GPIO %d with driver preference: %s",
+           pin_num, this->driver_type_ == DriverType::LEDC ? "LEDC" :
+                    this->driver_type_ == DriverType::MCPWM ? "MCPWM" : "AUTO");
+  
   if (this->driver_type_ == DriverType::LEDC) {
-    allocation_success = this->allocate_ledc_channel();
-  } else if (this->driver_type_ == DriverType::MCPWM) {
-    allocation_success = this->allocate_mcpwm_channel();
-  } else {  // AUTO
-    // Try LEDC first, then MCPWM
+    ESP_LOGD(TAG, "Trying LEDC allocation (forced)...");
     allocation_success = this->allocate_ledc_channel();
     if (!allocation_success) {
+      ESP_LOGE(TAG, "LEDC allocation failed - all 8 LEDC channels in use");
+    }
+  } else if (this->driver_type_ == DriverType::MCPWM) {
+    ESP_LOGD(TAG, "Trying MCPWM allocation (forced)...");
+    allocation_success = this->allocate_mcpwm_channel();
+    if (!allocation_success) {
+      ESP_LOGE(TAG, "MCPWM allocation failed - all 12 MCPWM channels in use");
+    }
+  } else {  // AUTO
+    // Try LEDC first, then MCPWM
+    ESP_LOGD(TAG, "Trying LEDC allocation (auto)...");
+    allocation_success = this->allocate_ledc_channel();
+    if (!allocation_success) {
+      ESP_LOGD(TAG, "LEDC allocation failed, trying MCPWM (auto)...");
       allocation_success = this->allocate_mcpwm_channel();
+      if (!allocation_success) {
+        ESP_LOGE(TAG, "Both LEDC and MCPWM allocation failed - all 20 channels in use");
+      }
     }
   }
 
   if (!allocation_success) {
     ESP_LOGE(TAG, "Failed to allocate PWM channel for GPIO %d", pin_num);
+    this->log_resource_usage();
     this->mark_failed();
     return;
   }
@@ -69,14 +92,26 @@ void McpwmUnifiedOutput::setup() {
 
   // Setup the allocated driver
   if (this->allocated_driver_ == AllocatedDriver::LEDC) {
+    ESP_LOGD(TAG, "Setting up LEDC driver (Channel %d, Timer %d, Frequency %.1f Hz)", 
+             this->allocated_channel_, this->ledc_timer_, this->frequency_);
     if (!this->setup_ledc()) {
-      ESP_LOGE(TAG, "Failed to setup LEDC");
+      ESP_LOGE(TAG, "Failed to setup LEDC for GPIO %d", pin_num);
+      ESP_LOGE(TAG, "Debug: LEDC Channel %d, Timer %d, Frequency %.1f Hz", 
+               this->allocated_channel_, this->ledc_timer_, this->frequency_);
+      ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not PWM capable, hardware conflict");
       this->mark_failed();
       return;
     }
   } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
+    ESP_LOGD(TAG, "Setting up MCPWM driver (Unit %d, Timer %d, Operator %s, Frequency %.1f Hz)", 
+             this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_, 
+             this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B", this->frequency_);
     if (!this->setup_mcpwm()) {
-      ESP_LOGE(TAG, "Failed to setup MCPWM");
+      ESP_LOGE(TAG, "Failed to setup MCPWM for GPIO %d", pin_num);
+      ESP_LOGE(TAG, "Debug: Unit %d, Timer %d, Operator %s, Frequency %.1f Hz", 
+               this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_,
+               this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B", this->frequency_);
+      ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not MCPWM capable, timer conflict");
       this->mark_failed();
       return;
     }
@@ -285,6 +320,64 @@ void McpwmUnifiedOutput::dump_config() {
   } else {
     ESP_LOGCONFIG(TAG, "  Driver: Not allocated");
   }
+}
+
+void McpwmUnifiedOutput::log_resource_usage() {
+  ESP_LOGE(TAG, "=== Resource Usage Debug Information ===");
+  
+  // Log LEDC channel usage
+  ESP_LOGE(TAG, "LEDC Channels (0-7):");
+  bool ledc_available = false;
+  for (int i = 0; i < 8; i++) {
+    bool used = ledc_channels_used_[i];
+    ESP_LOGE(TAG, "  Channel %d: %s", i, used ? "USED" : "FREE");
+    if (!used) ledc_available = true;
+  }
+  ESP_LOGE(TAG, "LEDC Summary: %s", ledc_available ? "Channels available" : "All channels used");
+  
+  // Log MCPWM channel usage
+  ESP_LOGE(TAG, "MCPWM Channels (8-19):");
+  bool mcpwm_available = false;
+  int channel_num = 8;
+  for (int unit = 0; unit < 2; unit++) {
+    for (int timer = 0; timer < 3; timer++) {
+      for (int op = 0; op < 2; op++) {
+        bool used = mcpwm_units_used_[timer][op][unit];
+        ESP_LOGE(TAG, "  Channel %d (Unit%d/Timer%d/Op%s): %s", 
+                 channel_num++, unit, timer, (op == 0) ? "A" : "B", used ? "USED" : "FREE");
+        if (!used) mcpwm_available = true;
+      }
+    }
+  }
+  ESP_LOGE(TAG, "MCPWM Summary: %s", mcpwm_available ? "Channels available" : "All channels used");
+  
+  // Log GPIO usage
+  ESP_LOGE(TAG, "GPIO Pins in use:");
+  if (gpio_pins_used_.empty()) {
+    ESP_LOGE(TAG, "  None");
+  } else {
+    for (uint8_t pin : gpio_pins_used_) {
+      ESP_LOGE(TAG, "  GPIO %d", pin);
+    }
+  }
+  
+  // Provide recommendations
+  ESP_LOGE(TAG, "=== Troubleshooting Suggestions ===");
+  if (!ledc_available && !mcpwm_available) {
+    ESP_LOGE(TAG, "All 20 PWM channels exhausted (8 LEDC + 12 MCPWM)");
+    ESP_LOGE(TAG, "Solution: Reduce number of PWM outputs or reuse existing ones");
+  } else if (!ledc_available && mcpwm_available) {
+    ESP_LOGE(TAG, "LEDC channels full, but MCPWM available");
+    ESP_LOGE(TAG, "Try: driver: mcpwm or driver: auto");
+  } else if (ledc_available && !mcpwm_available) {
+    ESP_LOGE(TAG, "MCPWM channels full, but LEDC available");
+    ESP_LOGE(TAG, "Try: driver: ledc or driver: auto");
+  }
+  
+  ESP_LOGE(TAG, "Current driver preference: %s", 
+           this->driver_type_ == DriverType::LEDC ? "LEDC" :
+           this->driver_type_ == DriverType::MCPWM ? "MCPWM" : "AUTO");
+  ESP_LOGE(TAG, "==========================================");
 }
 
 }  // namespace mcpwm_unified

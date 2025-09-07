@@ -82,6 +82,7 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   void write_ledc_state(float state);
   void write_mcpwm_state(float state);
   uint32_t frequency_to_ledc_resolution(float freq);
+  void log_resource_usage();
 };
 
 }  // namespace mcpwm_unified

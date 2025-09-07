@@ -1,0 +1,72 @@
+name: ESPHome CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  esphome:
+    name: ESPHome ${{ matrix.file }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+          - test_minimal.yaml
+          - test_basic.yaml
+          - test_all_channels.yaml
+          - test_explicit_drivers.yaml
+          - test_inverted.yaml
+          - test_ledc_baseline.yaml
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache ESPHome
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: esphome-${{ hashFiles('**/requirements*.txt', '**/*.yaml') }}
+          restore-keys: |
+            esphome-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ESPHome
+        run: |
+          pip install --upgrade pip
+          pip install esphome
+
+      - name: Validate ESPHome configuration
+        run: |
+          esphome config ${{ matrix.file }}
+
+      - name: Compile ESPHome firmware
+        run: |
+          esphome compile ${{ matrix.file }}
+
+  # Summary job to check if all configurations passed
+  esphome-summary:
+    name: ESPHome CI Summary
+    runs-on: ubuntu-latest
+    needs: [esphome]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.esphome.result }}" == "success" ]]; then
+            echo "✅ All ESPHome configurations validated and compiled successfully!"
+          else
+            echo "❌ Some ESPHome configurations failed"
+            exit 1
+          fi
