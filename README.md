@@ -27,18 +27,18 @@ Add to your ESPHome YAML configuration:
 
 ```yaml
 external_components:
-  - source: /path/to/mcpwm_sync_example/my_components
+  - source: /path/to/mcpwm_sync_example/components
     components: [ mcpwm_unified ]
 ```
 
 ### Method 2: Local Components
 
-1. Copy the `my_components/mcpwm_unified/` directory to your ESPHome configuration folder
+1. Copy the `components/mcpwm_unified/` directory to your ESPHome configuration folder
 2. Reference it in your YAML:
 
 ```yaml
 external_components:
-  - source: my_components
+  - source: components
     components: [ mcpwm_unified ]
 ```
 

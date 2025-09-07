@@ -13,7 +13,7 @@ logger:
 
 # External components
 external_components:
-  - source: my_components
+  - source: components
     components: [ mcpwm_unified ]
 
 # Test all 20 channels (8 LEDC + 12 MCPWM) based on original ESP-IDF code
