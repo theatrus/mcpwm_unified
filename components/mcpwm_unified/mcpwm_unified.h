@@ -56,7 +56,6 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   DriverType driver_type_{DriverType::AUTO};
   AllocatedDriver allocated_driver_{AllocatedDriver::NONE};
   bool inverted_{false};
-  std::string failure_reason_;
   
   // Preferred configuration
   optional<uint8_t> preferred_channel_;
@@ -85,7 +84,6 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   void write_mcpwm_state(float state);
   uint32_t frequency_to_ledc_resolution(float freq);
   void log_resource_usage();
-  void mark_failed_with_reason(const std::string &reason);
 };
 
 }  // namespace mcpwm_unified

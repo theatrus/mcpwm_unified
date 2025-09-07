@@ -31,7 +31,7 @@ void McpwmUnifiedOutput::setup() {
   
   if (this->pin_ == nullptr) {
     ESP_LOGE(TAG, "Pin not configured!");
-    this->mark_failed_with_reason("Pin not configured");
+    this->mark_failed("Pin not configured");
     return;
   }
 
@@ -44,7 +44,7 @@ void McpwmUnifiedOutput::setup() {
       ESP_LOGE(TAG, "  GPIO %d: in use", used_pin);
     }
     ESP_LOGE(TAG, "Solution: Use a different GPIO pin or remove duplicate configuration");
-    this->mark_failed_with_reason("GPIO " + std::to_string(pin_num) + " already in use");
+    this->mark_failed(("GPIO " + std::to_string(pin_num) + " already in use").c_str());
     return;
   }
 
@@ -94,7 +94,7 @@ void McpwmUnifiedOutput::setup() {
       reason = "All 20 PWM channels exhausted (8 LEDC + 12 MCPWM)";
     }
     
-    this->mark_failed_with_reason(reason);
+    this->mark_failed(reason.c_str());
     return;
   }
 
@@ -110,7 +110,7 @@ void McpwmUnifiedOutput::setup() {
       ESP_LOGE(TAG, "Debug: LEDC Channel %d, Timer %d, Frequency %.1f Hz", 
                this->allocated_channel_, this->ledc_timer_, this->frequency_);
       ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not PWM capable, hardware conflict");
-      this->mark_failed_with_reason("LEDC setup failed for GPIO " + std::to_string(pin_num));
+      this->mark_failed(("LEDC setup failed for GPIO " + std::to_string(pin_num)).c_str());
       return;
     }
   } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
@@ -123,7 +123,7 @@ void McpwmUnifiedOutput::setup() {
                this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_,
                this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B", this->frequency_);
       ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not MCPWM capable, timer conflict");
-      this->mark_failed_with_reason("MCPWM setup failed for GPIO " + std::to_string(pin_num));
+      this->mark_failed(("MCPWM setup failed for GPIO " + std::to_string(pin_num)).c_str());
       return;
     }
   }
@@ -389,15 +389,6 @@ void McpwmUnifiedOutput::log_resource_usage() {
            this->driver_type_ == DriverType::LEDC ? "LEDC" :
            this->driver_type_ == DriverType::MCPWM ? "MCPWM" : "AUTO");
   ESP_LOGE(TAG, "==========================================");
-}
-
-void McpwmUnifiedOutput::mark_failed_with_reason(const std::string &reason) {
-  this->failure_reason_ = reason;
-  ESP_LOGE(TAG, "=== COMPONENT FAILURE ===");
-  ESP_LOGE(TAG, "Component: MCPWM Unified Output");
-  ESP_LOGE(TAG, "Reason: %s", reason.c_str());
-  ESP_LOGE(TAG, "========================");
-  this->mark_failed();
 }
 
 }  // namespace mcpwm_unified
