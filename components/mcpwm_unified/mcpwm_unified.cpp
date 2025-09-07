@@ -223,6 +223,11 @@ void McpwmUnifiedOutput::write_state(float state) {
   if (state < 0.0f) state = 0.0f;
   if (state > 1.0f) state = 1.0f;
 
+  // Invert the state if requested (0 becomes 1, 1 becomes 0)
+  if (this->inverted_) {
+    state = 1.0f - state;
+  }
+
   if (this->allocated_driver_ == AllocatedDriver::LEDC) {
     this->write_ledc_state(state);
   } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
@@ -267,6 +272,7 @@ void McpwmUnifiedOutput::dump_config() {
   ESP_LOGCONFIG(TAG, "MCPWM Unified Output:");
   ESP_LOGCONFIG(TAG, "  Pin: GPIO%d", this->pin_->get_pin());
   ESP_LOGCONFIG(TAG, "  Frequency: %.1f Hz", this->frequency_);
+  ESP_LOGCONFIG(TAG, "  Inverted: %s", this->inverted_ ? "YES" : "NO");
   
   if (this->allocated_driver_ == AllocatedDriver::LEDC) {
     ESP_LOGCONFIG(TAG, "  Driver: LEDC (Channel %d)", this->allocated_channel_);

@@ -2,7 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import output
 from esphome import pins
-from esphome.const import CONF_ID, CONF_PIN, CONF_FREQUENCY, CONF_CHANNEL
+from esphome.const import CONF_ID, CONF_PIN, CONF_FREQUENCY, CONF_CHANNEL, CONF_INVERTED
 
 from . import mcpwm_unified_ns
 
@@ -24,6 +24,7 @@ CONFIG_SCHEMA = output.FLOAT_OUTPUT_SCHEMA.extend(
         cv.Optional(CONF_MCPWM_UNIT): cv.int_range(min=0, max=1),
         cv.Optional(CONF_MCPWM_TIMER): cv.int_range(min=0, max=2),
         cv.Optional(CONF_MCPWM_OPERATOR, default="A"): cv.one_of("A", "B", upper=True),
+        cv.Optional(CONF_INVERTED, default=False): cv.boolean,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -36,6 +37,7 @@ async def to_code(config):
     cg.add(var.set_pin(pin))
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_driver(config[CONF_DRIVER]))
+    cg.add(var.set_inverted(config[CONF_INVERTED]))
     
     if CONF_CHANNEL in config:
         cg.add(var.set_channel(config[CONF_CHANNEL]))

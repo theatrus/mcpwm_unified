@@ -264,7 +264,7 @@ logger:
 ## Component Architecture
 
 ```
-mcpwm_unified/
+components/mcpwm_unified/
 ├── __init__.py          # Component registration
 ├── output.py            # ESPHome schema and code generation  
 ├── mcpwm_unified.h      # C++ header with class definitions

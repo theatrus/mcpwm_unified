@@ -40,6 +40,7 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   void set_mcpwm_unit(uint8_t unit) { this->mcpwm_unit_ = unit; }
   void set_mcpwm_timer(uint8_t timer) { this->mcpwm_timer_ = timer; }
   void set_mcpwm_operator(uint8_t op) { this->mcpwm_operator_ = op; }
+  void set_inverted(bool inverted) { this->inverted_ = inverted; }
 
   void setup() override;
   void dump_config() override;
@@ -53,6 +54,7 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   float frequency_{50000.0f};
   DriverType driver_type_{DriverType::AUTO};
   AllocatedDriver allocated_driver_{AllocatedDriver::NONE};
+  bool inverted_{false};
   
   // Preferred configuration
   optional<uint8_t> preferred_channel_;

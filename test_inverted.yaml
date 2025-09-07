@@ -1,0 +1,45 @@
+esphome:
+  name: inverted-test
+  friendly_name: "Inverted PWM Test"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# External components
+external_components:
+  - source: components
+    components: [ mcpwm_unified ]
+
+# Test inverted PWM functionality
+output:
+  # Normal PWM output
+  - platform: mcpwm_unified
+    id: normal_pwm
+    pin: GPIO1
+    frequency: 50000Hz
+    inverted: false
+    
+  # Inverted PWM output
+  - platform: mcpwm_unified
+    id: inverted_pwm
+    pin: GPIO2
+    frequency: 50000Hz
+    inverted: true
+
+# Test with lights to see the difference
+light:
+  - platform: monochromatic
+    id: normal_light
+    output: normal_pwm
+    name: "Normal Light"
+    
+  - platform: monochromatic
+    id: inverted_light
+    output: inverted_pwm
+    name: "Inverted Light"
