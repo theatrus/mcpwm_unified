@@ -393,25 +393,11 @@ void McpwmUnifiedOutput::log_resource_usage() {
 
 void McpwmUnifiedOutput::mark_failed_with_reason(const std::string &reason) {
   this->failure_reason_ = reason;
-  ESP_LOGE(TAG, "Component marked as FAILED: %s", reason.c_str());
+  ESP_LOGE(TAG, "=== COMPONENT FAILURE ===");
+  ESP_LOGE(TAG, "Component: MCPWM Unified Output");
+  ESP_LOGE(TAG, "Reason: %s", reason.c_str());
+  ESP_LOGE(TAG, "========================");
   this->mark_failed();
-}
-
-std::string McpwmUnifiedOutput::get_component_source() const {
-  if (this->is_failed() && !this->failure_reason_.empty()) {
-    return this->failure_reason_;
-  }
-  
-  // If not failed, return normal component info
-  if (this->allocated_driver_ == AllocatedDriver::LEDC) {
-    return "LEDC Channel " + std::to_string(this->allocated_channel_);
-  } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
-    return "MCPWM Unit" + std::to_string(this->allocated_mcpwm_unit_) + 
-           "/Timer" + std::to_string(this->allocated_mcpwm_timer_) + 
-           "/Op" + (this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B");
-  }
-  
-  return "MCPWM Unified Output";
 }
 
 }  // namespace mcpwm_unified

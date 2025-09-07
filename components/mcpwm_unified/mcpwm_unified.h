@@ -46,7 +46,6 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   void setup() override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
-  std::string get_component_source() const override;
 
  protected:
   void write_state(float state) override;
