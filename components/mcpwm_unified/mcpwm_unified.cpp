@@ -44,7 +44,7 @@ void McpwmUnifiedOutput::setup() {
       ESP_LOGE(TAG, "  GPIO %d: in use", used_pin);
     }
     ESP_LOGE(TAG, "Solution: Use a different GPIO pin or remove duplicate configuration");
-    this->mark_failed(("GPIO " + std::to_string(pin_num) + " already in use").c_str());
+    this->set_error_and_fail("GPIO " + std::to_string(pin_num) + " already in use");
     return;
   }
 
@@ -94,7 +94,7 @@ void McpwmUnifiedOutput::setup() {
       reason = "All 20 PWM channels exhausted (8 LEDC + 12 MCPWM)";
     }
     
-    this->mark_failed(reason.c_str());
+    this->set_error_and_fail(reason);
     return;
   }
 
@@ -110,7 +110,7 @@ void McpwmUnifiedOutput::setup() {
       ESP_LOGE(TAG, "Debug: LEDC Channel %d, Timer %d, Frequency %.1f Hz", 
                this->allocated_channel_, this->ledc_timer_, this->frequency_);
       ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not PWM capable, hardware conflict");
-      this->mark_failed(("LEDC setup failed for GPIO " + std::to_string(pin_num)).c_str());
+      this->set_error_and_fail("LEDC setup failed for GPIO " + std::to_string(pin_num));
       return;
     }
   } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
@@ -123,7 +123,7 @@ void McpwmUnifiedOutput::setup() {
                this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_,
                this->allocated_mcpwm_operator_ == MCPWM_OPR_A ? "A" : "B", this->frequency_);
       ESP_LOGE(TAG, "Possible causes: Invalid frequency, GPIO not MCPWM capable, timer conflict");
-      this->mark_failed(("MCPWM setup failed for GPIO " + std::to_string(pin_num)).c_str());
+      this->set_error_and_fail("MCPWM setup failed for GPIO " + std::to_string(pin_num));
       return;
     }
   }
@@ -389,6 +389,11 @@ void McpwmUnifiedOutput::log_resource_usage() {
            this->driver_type_ == DriverType::LEDC ? "LEDC" :
            this->driver_type_ == DriverType::MCPWM ? "MCPWM" : "AUTO");
   ESP_LOGE(TAG, "==========================================");
+}
+
+void McpwmUnifiedOutput::set_error_and_fail(const std::string &error) {
+  this->error_message_ = error;
+  this->mark_failed(this->error_message_.c_str());
 }
 
 }  // namespace mcpwm_unified
