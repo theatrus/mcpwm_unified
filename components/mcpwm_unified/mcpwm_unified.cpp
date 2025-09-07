@@ -68,14 +68,28 @@ void McpwmUnifiedOutput::setup() {
       ESP_LOGE(TAG, "MCPWM allocation failed - all 12 MCPWM channels in use");
     }
   } else {  // AUTO
-    // Try LEDC first, then MCPWM
-    ESP_LOGD(TAG, "Trying LEDC allocation (auto)...");
-    allocation_success = this->allocate_ledc_channel();
-    if (!allocation_success) {
-      ESP_LOGD(TAG, "LEDC allocation failed, trying MCPWM (auto)...");
+    // Frequency-based allocation: prefer MCPWM for >16kHz, LEDC for <=16kHz
+    bool prefer_mcpwm = this->frequency_ > 16000.0f;
+    
+    if (prefer_mcpwm) {
+      ESP_LOGD(TAG, "Frequency %.1f Hz > 16kHz, trying MCPWM allocation first (auto)...", this->frequency_);
       allocation_success = this->allocate_mcpwm_channel();
       if (!allocation_success) {
-        ESP_LOGE(TAG, "Both LEDC and MCPWM allocation failed - all 20 channels in use");
+        ESP_LOGD(TAG, "MCPWM allocation failed, trying LEDC fallback (auto)...");
+        allocation_success = this->allocate_ledc_channel();
+        if (!allocation_success) {
+          ESP_LOGE(TAG, "Both MCPWM and LEDC allocation failed - all 20 channels in use");
+        }
+      }
+    } else {
+      ESP_LOGD(TAG, "Frequency %.1f Hz <= 16kHz, trying LEDC allocation first (auto)...", this->frequency_);
+      allocation_success = this->allocate_ledc_channel();
+      if (!allocation_success) {
+        ESP_LOGD(TAG, "LEDC allocation failed, trying MCPWM fallback (auto)...");
+        allocation_success = this->allocate_mcpwm_channel();
+        if (!allocation_success) {
+          ESP_LOGE(TAG, "Both LEDC and MCPWM allocation failed - all 20 channels in use");
+        }
       }
     }
   }
