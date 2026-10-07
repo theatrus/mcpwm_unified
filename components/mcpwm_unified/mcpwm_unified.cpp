@@ -31,7 +31,7 @@ void McpwmUnifiedOutput::setup() {
   
   if (this->pin_ == nullptr) {
     ESP_LOGE(TAG, "Pin not configured!");
-    this->mark_failed("Pin not configured");
+    this->mark_failed(LOG_STR("Pin not configured"));
     return;
   }
 
@@ -343,7 +343,7 @@ void McpwmUnifiedOutput::dump_config() {
   if (this->allocated_driver_ == AllocatedDriver::LEDC) {
     ESP_LOGCONFIG(TAG, "  Driver: LEDC (Channel %d)", this->allocated_channel_);
     uint32_t resolution = this->frequency_to_ledc_resolution(this->frequency_);
-    ESP_LOGCONFIG(TAG, "  Resolution: %d-bit", resolution);
+    ESP_LOGCONFIG(TAG, "  Resolution: %" PRIu32 "-bit", resolution);
   } else if (this->allocated_driver_ == AllocatedDriver::MCPWM) {
     ESP_LOGCONFIG(TAG, "  Driver: MCPWM (Unit %d, Timer %d, Operator %s)", 
                   this->allocated_mcpwm_unit_, this->allocated_mcpwm_timer_, 
@@ -413,7 +413,8 @@ void McpwmUnifiedOutput::log_resource_usage() {
 
 void McpwmUnifiedOutput::set_error_and_fail(const std::string &error) {
   this->error_message_ = error;
-  this->mark_failed(this->error_message_.c_str());
+  ESP_LOGE(TAG, "%s", this->error_message_.c_str());
+  this->mark_failed();
 }
 
 }  // namespace mcpwm_unified
