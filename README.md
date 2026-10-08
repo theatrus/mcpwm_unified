@@ -121,9 +121,9 @@ output:
 | `frequency` | Hz | 50000 | PWM frequency in Hz |
 | `driver` | string | "auto" | Driver selection: "auto", "ledc", "mcpwm" |
 | `channel` | int | auto | Preferred channel number (0-19) |
-| `mcpwm_unit` | int | 0 | MCPWM unit (0-1) for MCPWM driver |
-| `mcpwm_timer` | int | 0 | MCPWM timer (0-2) for MCPWM driver |
-| `mcpwm_operator` | string | "A" | MCPWM operator ("A" or "B") for MCPWM driver |
+| `mcpwm_unit` | int | 0 | MCPWM group (0-1) to try first |
+| `mcpwm_timer` | int | 0 | Accepted for older configs; the driver now picks timers |
+| `mcpwm_operator` | string | "A" | Accepted for older configs; the driver now picks operators |
 | `inverted` | boolean | false | Invert PWM signal (0 input = 100% output) |
 
 ### Driver Selection
@@ -138,6 +138,9 @@ output:
 2. **MCPWM Fallback**: Channels 8-19 use MCPWM when LEDC is exhausted
 3. **Conflict Prevention**: Automatic detection of GPIO pin conflicts
 4. **Resource Tracking**: Prevents double allocation of channels
+5. **Shared Timers**: Outputs at the same frequency share a timer. LEDC has 4 timers, and
+   each MCPWM group has 3, so each driver supports that many different frequencies. An output
+   whose frequency would need a fourth LEDC timer falls back to MCPWM in `auto` mode.
 
 ## GPIO Pin Recommendations
 
@@ -246,8 +249,11 @@ light:
 ### MCPWM Driver  
 - **Best for**: Motor control, servo control, precise timing
 - **Advantages**: Hardware synchronization, deadtime control, fault detection
-- **Resolution**: Fixed by frequency setting
-- **Frequency Range**: 1Hz - 1MHz
+- **Resolution**: 10 MHz timer clock, so 10,000,000 / frequency steps per period
+  (256 at 39 kHz, 625 at 16 kHz)
+- **Frequency Range**: about 153Hz - 5MHz
+- **Driver**: ESP-IDF's current MCPWM driver (`driver/mcpwm_prelude.h`); the legacy
+  driver ran timers at 1 MHz, which gave only 25 steps at 39 kHz
 
 ## Frequency vs Resolution
 

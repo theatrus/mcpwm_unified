@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import output
+from esphome.components.esp32 import include_builtin_idf_component
 from esphome import pins
 from esphome.const import CONF_ID, CONF_PIN, CONF_FREQUENCY, CONF_CHANNEL, CONF_INVERTED
 
@@ -29,6 +30,10 @@ CONFIG_SCHEMA = output.FLOAT_OUTPUT_SCHEMA.extend(
 ).extend(cv.COMPONENT_SCHEMA)
 
 async def to_code(config):
+    # ESPHome leaves these IDF drivers out of the build unless a component asks for them
+    include_builtin_idf_component("esp_driver_ledc")
+    include_builtin_idf_component("esp_driver_mcpwm")
+
     var = cg.new_Pvariable(config[CONF_ID])
     await output.register_output(var, config)
     await cg.register_component(var, config)
