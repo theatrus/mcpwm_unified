@@ -378,8 +378,10 @@ bool McpwmUnifiedOutput::setup_mcpwm(std::string &failure_reason) {
   if ((err = mcpwm_new_generator(oper.handle, &generator_config, &this->mcpwm_generator_)) != ESP_OK) {
     return fail("generator", err);
   }
-  // Hold the pin low until the first write, as the legacy driver did with a 0% duty
-  if ((err = mcpwm_generator_set_force_level(this->mcpwm_generator_, 0, true)) != ESP_OK) return fail("force level", err);
+  // Hold the pin at the "off" level until the first write
+  if ((err = mcpwm_generator_set_force_level(this->mcpwm_generator_, this->inverted_ ? 1 : 0, true)) != ESP_OK) {
+    return fail("force level", err);
+  }
 
   // High at the start of each period, low when the counter reaches the compare value
   err = mcpwm_generator_set_action_on_timer_event(
@@ -395,7 +397,8 @@ bool McpwmUnifiedOutput::setup_mcpwm(std::string &failure_reason) {
 }
 
 void McpwmUnifiedOutput::write_state(float state) {
-  if (state < 0.0f) state = 0.0f;
+  // NaN fails every comparison below, so turn it into "off" before anything else
+  if (!(state > 0.0f)) state = 0.0f;
   if (state > 1.0f) state = 1.0f;
 
   // Invert the state if requested (0 becomes 1, 1 becomes 0)
