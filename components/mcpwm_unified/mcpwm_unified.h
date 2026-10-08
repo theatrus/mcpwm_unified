@@ -10,9 +10,7 @@
 
 #ifdef USE_ESP32
 #include "driver/ledc.h"
-#include "driver/mcpwm.h"
-#include "soc/ledc_periph.h"
-#include "soc/mcpwm_periph.h"
+#include "driver/mcpwm_prelude.h"
 #endif
 
 namespace esphome {
@@ -38,6 +36,8 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   void set_frequency(float frequency) { this->frequency_ = frequency; }
   void set_driver(const std::string &driver);
   void set_channel(uint8_t channel) { this->preferred_channel_ = channel; }
+  // MCPWM group to try first. The driver picks timers and operators itself; timer and
+  // operator are kept for existing configs but no longer choose the hardware.
   void set_mcpwm_unit(uint8_t unit) { this->mcpwm_unit_ = unit; }
   void set_mcpwm_timer(uint8_t timer) { this->mcpwm_timer_ = timer; }
   void set_mcpwm_operator(uint8_t op) { this->mcpwm_operator_ = op; }
@@ -57,26 +57,29 @@ class McpwmUnifiedOutput : public output::FloatOutput, public Component {
   AllocatedDriver allocated_driver_{AllocatedDriver::NONE};
   bool inverted_{false};
   std::string error_message_; // Persistent storage for error messages
-  
+
   // Preferred configuration
   optional<uint8_t> preferred_channel_;
   uint8_t mcpwm_unit_{0};
   uint8_t mcpwm_timer_{0};
   uint8_t mcpwm_operator_{0}; // 0 = A, 1 = B
-  
-  // Allocated resources
+
+  // Allocated LEDC resources
   uint8_t allocated_channel_{0};
   ledc_timer_t ledc_timer_{LEDC_TIMER_0};
   ledc_channel_t ledc_channel_{LEDC_CHANNEL_0};
-  mcpwm_unit_t allocated_mcpwm_unit_{MCPWM_UNIT_0};
-  mcpwm_timer_t allocated_mcpwm_timer_{MCPWM_TIMER_0};
-  mcpwm_operator_t allocated_mcpwm_operator_{MCPWM_OPR_A};
+
+  // Allocated MCPWM resources
+  int mcpwm_group_{-1};
+  int mcpwm_operator_slot_{-1};
+  uint32_t mcpwm_period_ticks_{0};
+  mcpwm_cmpr_handle_t mcpwm_comparator_{nullptr};
+  mcpwm_gen_handle_t mcpwm_generator_{nullptr};
 
   // Static resource tracking
   static std::bitset<8> ledc_channels_used_;
-  static std::bitset<2> mcpwm_units_used_[3][2]; // [timer][operator]
   static std::set<uint8_t> gpio_pins_used_;
-  
+
   bool allocate_ledc_channel();
   bool allocate_mcpwm_channel();
   bool setup_ledc(std::string &failure_reason);
